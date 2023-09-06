@@ -1,0 +1,36 @@
+Content-Type: multipart/mixed; boundary="------------PkR0nbPEr0h6Y0pQ6jWJ4Xnl"
+Date: Mon, 4 Sep 2023 19:43:21 +0200
+MIME-Version: 1.0
+User-Agent: Mozilla Thunderbird
+Content-Language: en-US
+To: teceiver@domain.com
+From: tender@domain.com
+Subject: Test Subject
+
+This is a multi-part message in MIME format.
+--------------PkR0nbPEr0h6Y0pQ6jWJ4Xnl
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+<!DOCTYPE html>
+<html>
+  <head>
+
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Test Subject</title>
+  </head>
+  <body>
+    <p>Here look at my cool black square.<br>
+    </p>
+  </body>
+</html>
+--------------PkR0nbPEr0h6Y0pQ6jWJ4Xnl
+Content-Type: image/png; name="black.png"
+Content-Disposition: attachment; filename="black.png"
+Content-Transfer-Encoding: base64
+
+iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAACXBIWXMAAA9hAAAPYQGoP6dp
+AAAARElEQVR42u3BAQEAAACAkP6v7ggKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAYwIAAAXNuiaUAAAAASUVORK5CYII=
+
+--------------PkR0nbPEr0h6Y0pQ6jWJ4Xnl--

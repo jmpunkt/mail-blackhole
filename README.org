@@ -1,0 +1,128 @@
+* Mail-Blackhole
+
+Standalone single binary SMTP server for storing emails during
+development. Each received mail is stored into a separate
+directory. Mails can either be viewed with the web frontend or with a
+text editor. All "relevant" information (HTML content, text content,
+basic metadata, and attachments) of a mail are extracted into separate
+files.
+
+*NEVER* send non-trusted mails to the server. HTML code inside mails are
+not sanitized. Only for development usage.
+
+** Building
+
+*** Requirements
+
+#+BEGIN_SRC sh
+git clone https://github.com/jmpunkt/mail-blackhole
+cd mail-blackhole
+#+END_SRC
+
+Building the frontend requires a Rust compiler with support for the
+wasm32-unknown-unknown target (install through Rustup). Additionally
+wasm-bindgen-cli, binaryen, and minify binaries are required to
+optimize and pack the resulting WASM code.
+
+*** Building
+
+If you want to keep assets separate and not built into the binary,
+then use the following steps.
+
+**** Cargo-Leptos (Recommended)
+
+Requires [[https://github.com/leptos-rs/cargo-leptos][cargo-leptos]] being installed.
+
+***** With Bundling (Recommended)
+
+#+BEGIN_SRC sh
+export CARGO_BUNDLE_DIR=target/site/pkg
+cargo-leptos build --release --bin-features bundle
+#+END_SRC
+
+***** Without Bundling
+#+BEGIN_SRC sh
+cargo-leptos build --release
+#+END_SRC
+
+**** Manual
+
+The manual method replicates the build steps of =cargo-leptos=. Doing
+it way, allows to pass shell arguments to server.
+
+First build the frontend with optimized WASM output.
+
+#+BEGIN_SRC sh
+mkdir www
+
+cargo build --lib --release --no-default-features --features "hydrate" --target wasm32-unknown-unknown
+wasm-bindgen target/wasm32-unknown-unknown/release/mail_blackhole.wasm --out-dir www --web
+wasm-opt -Os -o www/mail_blackhole.wasm www/mail_blackhole_bg.wasm
+#+END_SRC
+
+Next build the backend which will serve the previously created WASM
+files.
+
+***** With Bundling (Recommended)
+
+Bundling is handled by the feature flag =bundle=. The directory
+containing the assets must be specified with the environment variable
+=CARGO_BUNDLE_DIR=.
+
+#+BEGIN_SRC sh
+export CARGO_BUNDLE_DIR=www
+export LEPTOS_OUTPUT_NAME=mail-blockhole-web
+cargo build --no-default-features --features bundle --release
+#+END_SRC
+
+***** Without Bundling
+
+#+BEGIN_SRC sh
+cargo build --release --features "ssr"
+#+END_SRC
+
+** Running
+
+*** Binary (with separate assets)
+
+#+BEGIN_SRC sh
+mail-blackhole --listen-http 8080 --listen-mail 2525 --mailboxes ./mails --files ./www
+#+END_SRC
+
+*** Binary (bundled)
+
+#+BEGIN_SRC sh
+mail-blackhole --listen-http 8080 --listen-mail 2525 --mailboxes ./mails
+#+END_SRC
+
+*** Nix
+
+#+BEGIN_SRC sh
+nix run github:jmpunkt/mail-blackhole
+#+END_SRC
+
+** Using
+
+Note that this does not provide a =sendmail= program. If your
+application rely on =sendmail= to send your mails use something like
+OpenSMPTD.
+
+*** OpenSMTPD (Optional)
+
+For development use the following configuration for OpenSMTPD. It will
+redirect all mails to mail-blackhole.
+
+#+BEGIN_SRC text
+listen on localhost
+action "relay" relay host localhost:2525
+match for any action "relay"
+#+END_SRC sh
+
+*** MSMTP (Testing)
+
+Sending test mails to server using MSMTP.
+
+#+BEGIN_SRC sh
+cat tests/with-attachment.mail | msmtp -vvv --read-envelope-from -t --port 2525
+cat tests/without-attachment.mail | msmtp -vvv --read-envelope-from -t --port 2525
+#+END_SRC

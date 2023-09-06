@@ -1,0 +1,93 @@
+[package]
+name = "mail-blackhole"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+readme = "README.org"
+authors = ["Jonas Meurer <jmpunkt@outlook.de>"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cfg-if = "1.0.0"
+futures = { version = "0.3.28" }
+leptos = "0.5.0"
+leptos_meta = "0.5.0"
+leptos_router = "0.5.0"
+serde = { version = "1.0.188", features = ["derive", "rc"] }
+serde_json = { version = "1" }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.17"
+web-sys = { version = "0.3.64", features = ["AbortController"] }
+
+# web
+console_error_panic_hook = { version = "0.1.7", optional = true }
+console_log = { version = "1.0", optional = true }
+gloo-net = { version = "0.3.1", optional = true }
+log = { version = "0.4.20", optional = true }
+wasm-bindgen = { version = "0.2.83", optional = true }
+
+# server
+argh = { version = "0.1.10", optional = true }
+axum = { version = "0.6.19", features = ["headers"], optional = true }
+futures-util = { version = "0.3.28", optional = true }
+leptos_axum = { version = "0.5.0", optional = true }
+mail-parser = { version = "0.8.2", optional = true }
+mailin = { version = "0.6.3", optional = true }
+tokio = { version = "1.29.1", features = ["macros", "rt", "sync", "rt-multi-thread" ], optional = true }
+tokio-stream = { version = "0.1.14", features = ["sync"], optional = true }
+tower = { version = "0.4.13", features = ["util"], optional = true }
+tower-http = { version = "0.4.3", features = ["fs", "trace"], optional = true }
+
+# bundle
+mime_guess = { version = "2.0.4", optional = true }
+include_dir = { version = "0.7.3", optional = true }
+
+[features]
+default = ["ssr"]
+hydrate = [
+  "dep:console_error_panic_hook",
+  "dep:console_log",
+  "dep:gloo-net",
+  "dep:log",
+  "dep:wasm-bindgen",
+  "leptos/hydrate",
+  "leptos_meta/hydrate",
+  "leptos_router/hydrate",
+]
+ssr = [
+  "dep:argh",
+  "dep:axum",
+  "dep:futures-util",
+  "dep:leptos_axum",
+  "dep:mail-parser",
+  "dep:mailin",
+  "dep:tokio",
+  "dep:tokio-stream",
+  "dep:tower",
+  "dep:tower-http",
+  "leptos/ssr",
+  "leptos_meta/ssr",
+  "leptos_router/ssr",
+]
+bundle = ["ssr", "dep:mime_guess", "dep:include_dir"]
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 'z'
+
+[package.metadata.leptos]
+output-name = "mail-blockhole-web"
+site-root = "target/site"
+style-file = "style/style.css"
+assets-dir = "assets"
+site-pkg-dir = "pkg"
+bin-package = "server"
+bin-features = ["ssr"]
+lib-package = "web"
+lib-features = ["hydrate"]
+env = "DEV"
