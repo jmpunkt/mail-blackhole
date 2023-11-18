@@ -141,7 +141,7 @@ fn Mailboxes() -> impl IntoView {
                     mailboxes
                         .into_iter()
                         .map(|mailbox| {
-                            let unread = move || {
+                            let unread_string = move || {
                                 let unread = mailbox.unread;
                                 if unread > 0 {
                                     format!(" ({})", unread)
@@ -149,18 +149,26 @@ fn Mailboxes() -> impl IntoView {
                                     String::from("")
                                 }
                             };
-                            let mailbox = mailbox.id;
-                            let classes = if selected_mailbox
-                                .with(|value| value.as_ref().map(|v| v == &mailbox))
-                                .unwrap_or(false)
-                            {
-                                "selected"
-                            } else {
-                                ""
+                            let mailbox_id = mailbox.id;
+
+                            let classes = {
+                                let unread = mailbox.unread;
+
+                                if selected_mailbox
+                                    .with(|value| value.as_ref().map(|v| v == &mailbox_id))
+                                    .unwrap_or(false)
+                                {
+                                    "selected"
+                                } else if unread > 0 {
+                                    "unread"
+                                } else {
+                                    ""
+                                }
                             };
+
                             view! {
-                              <A class=classes href=format!("/{mailbox}")>
-                                <span>{mailbox} {unread}</span>
+                              <A class=classes href=format!("/{mailbox_id}")>
+                                <span>{mailbox_id} {unread_string}</span>
                               </A>
                             }
                         })
