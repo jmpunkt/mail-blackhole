@@ -18,6 +18,10 @@ body {
   #root {
     flex-direction: column;
   }
+
+  main {
+    overflow: auto;
+  }
 }
 
 main {
