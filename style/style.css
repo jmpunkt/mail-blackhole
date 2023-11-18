@@ -22,6 +22,10 @@ body {
   main {
     overflow: auto;
   }
+
+  .info > * {
+    margin: 4px !important;
+  }
 }
 
 main {
