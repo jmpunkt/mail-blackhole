@@ -63,6 +63,12 @@
     // {
       overlays = {
         default = self: super: let
+          # NOTE: wasm-bindgen-cli requires a specific version due to
+          # compatibility. Since the version might differ between the
+          # nixpkgs's revisions, we pin them to a known good state and
+          # inject these *binary* dependencies.
+          pinnedPkgs = import nixpkgs {inherit (super) system;};
+
           rustc = rustOverwrite super.rust-bin.stable.latest.default;
 
           wasmPlatform = super.makeRustPlatform {
@@ -84,7 +90,11 @@
 
           leptos = manifest.package.metadata.leptos;
         in rec {
-          mail-blackhole = super.rustPlatform.buildRustPackage {
+          # NOTE: We are using the wasmPlatform here because there are
+          # features which required at least the 1.70.0
+          # compiler. Currently the 23.05 Nixpkgs ship the 1.69.0
+          # compiler.
+          mail-blackhole = wasmPlatform.buildRustPackage {
             inherit src;
 
             pname = "mail-blackhole";
@@ -106,7 +116,7 @@
             pname = "mail-blackhole-web";
             version = manifest.package.version;
 
-            nativeBuildInputs = with super; [
+            nativeBuildInputs = with pinnedPkgs; [
               wasm-bindgen-cli
               binaryen
               minify
