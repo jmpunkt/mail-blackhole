@@ -165,23 +165,16 @@
               description = "Package used by this module";
             };
 
-            listen = mkOption {
-              type = types.submodule {
-                options = {
-                  mail = mkOption {
-                    type = types.str;
-                    description = "Listening address/port for mail server.";
-                  };
-                  http = mkOption {
-                    type = types.str;
-                    description = "Listening address/port for http server.";
-                  };
-                };
-              };
-              default = {
-                mail = "0.0.0.0:25000";
-                http = "0.0.0.0:8080";
-              };
+            listen-http = mkOption {
+              type = types.str;
+              description = "Listening address/port for http server.";
+              default = "0.0.0.0:8080";
+            };
+
+            listen-mail = mkOption {
+              type = types.str;
+              description = "Listening address/port for http server.";
+              default = "0.0.0.0:2525";
             };
           };
           config = lib.mkIf cfg.enable {
@@ -192,7 +185,7 @@
 
               serviceConfig = {
                 StateDirectory = "mail-blackhole/mails";
-                ExecStart = "${cfg.package}/bin/mail-blackhole --listen-http ${cfg.listen.http} --listen-mail ${cfg.listen.mail} --mailboxes /var/lib/mail-blackhole/mails";
+                ExecStart = "${cfg.package}/bin/mail-blackhole --listen-http ${cfg.listen-http} --listen-mail ${cfg.listen-mail} --mailboxes /var/lib/mail-blackhole/mails";
               };
             };
           };
