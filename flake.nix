@@ -2,7 +2,6 @@
   description = "Mail server for development purposes.";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    stable.url = "github:NixOS/nixpkgs/nixos-23.05";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -13,21 +12,15 @@
   outputs = {
     self,
     nixpkgs,
-    stable,
     utils,
     rust-overlay,
     nix-filter,
   }: let
-    buildShell = pkgs: anyRustToolchain: let
-      stablePkgs = import stable {
-        inherit (pkgs) system;
-      };
-    in
+    buildShell = pkgs: anyRustToolchain:
       pkgs.mkShell {
         buildInputs = with pkgs; [
           anyRustToolchain
-          # NOTE: Package is broken in unstable.
-          stablePkgs.cargo-leptos
+          cargo-leptos
           wasm-pack
           binaryen
           leptosfmt
