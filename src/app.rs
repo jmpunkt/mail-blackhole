@@ -179,7 +179,7 @@ fn Mailboxes() -> impl IntoView {
     };
 
     let inner = move || {
-        view! { <div>{content}</div> }.on_mount(|html| {
+        view! { <div class="box">{content}</div> }.on_mount(|html| {
             let el = web_sys::Element::from(html.deref().clone());
 
             match el.query_selector(".selected") {
@@ -192,9 +192,7 @@ fn Mailboxes() -> impl IntoView {
     view! {
       <>
         <nav>
-          <Suspense fallback=|| {}>
-            <div class="box">{inner}</div>
-          </Suspense>
+          <Suspense fallback=|| {}>{inner}</Suspense>
         </nav>
         <Outlet/>
       </>
@@ -366,65 +364,59 @@ fn Mail() -> impl IntoView {
         data.get().map(|val| match val {
             None => view! { <div></div> }.into_view(),
             Some((Err(e), _, _)) => view! { <p class="error">{e.to_string()}</p> }.into_view(),
-            Some((Ok(None), _, _)) => view! {
-              <div class="not-found">
-                Mail not found.
-              </div>
-            }
+            Some((Ok(None), _, _)) => view! { <div class="not-found">Mail not found.</div> }
             .into_view(),
             Some((Ok(Some(data)), mailbox, mail)) => {
                 let empty = || {
                     view! {
                       <div class="empty">
-                        <p>
-                          No text available
-                        </p>
+                        <p>No text available</p>
                       </div>
                     }
+                    .into_view()
                 };
 
                 let content = match ty.as_str() {
                     "html" => {
-                        if let Some(html) = data.html {
-                            view! { <div class="content-html"></div> }.inner_html(html)
+                        if let Some(_) = data.html {
+                            view! {
+                              <object
+                                class="content-html"
+                                type="text/html"
+                                data=format!("/data/{mailbox}/{mail}/body.html")
+                              ></object>
+                            } .into_view()
                         } else {
                             empty()
                         }
                     }
                     "text" => {
                         if let Some(text) = data.text {
-                            view! { <div class="content-text">{text}</div> }
+                            view! { <div class="content-text">{text}</div> }.into_view()
                         } else {
                             empty()
                         }
                     }
                     "raw" => {
                         if let Some(raw) = data.raw {
-                            view! { <div class="content-raw">{raw}</div> }
+                            view! { <div class="content-raw">{raw}</div> }.into_view()
                         } else {
                             empty()
                         }
                     }
-                    _ => {
-                        view! {
-                          <div>
-                            <p>
-                              Unknown type
-                            </p>
-                          </div>
-                        }
+                    _ => view! {
+                      <div>
+                        <p>Unknown type</p>
+                      </div>
                     }
+                    .into_view(),
                 };
 
                 let from = data.metadata.from;
                 let subject = data.metadata.subject;
 
                 let attachments = if data.attachments.is_empty() {
-                    view! {
-                      <i>
-                        none
-                      </i>
-                    }
+                    view! { <i>none</i> }
                     .into_view()
                 } else {
                     data.attachments
@@ -448,13 +440,11 @@ fn Mail() -> impl IntoView {
                     .collect::<Vec<_>>();
 
                 view! {
-                  <div>
+                  <div class="mail">
                     <div class="info box">
                       <p>
                         <span>
-                          <b>
-                            From
-                          </b>
+                          <b>From</b>
                           :
                           {" "}
                         </span>
@@ -462,9 +452,7 @@ fn Mail() -> impl IntoView {
                       </p>
                       <p>
                         <span>
-                          <b>
-                            Subject
-                          </b>
+                          <b>Subject</b>
                           :
                           {" "}
                         </span>
@@ -472,9 +460,7 @@ fn Mail() -> impl IntoView {
                       </p>
                       <p>
                         <span>
-                          <b>
-                            Attachments
-                          </b>
+                          <b>Attachments</b>
                           :
                           {" "}
                         </span>
@@ -495,7 +481,10 @@ fn Mail() -> impl IntoView {
                           .collect_view()}
 
                     </div>
-                    <div class="content box">{content}</div>
+                    <div class=format!(
+                        "content box {}",
+                        if ty.as_str() == "html" { "object" } else { "" },
+                    )>{content}</div>
                   </div>
                 }
                 .into_view()
@@ -505,9 +494,7 @@ fn Mail() -> impl IntoView {
 
     view! {
       <main>
-        <div class="mail">
-          <Suspense fallback=|| {}>{content}</Suspense>
-        </div>
+        <Suspense fallback=|| {}>{content}</Suspense>
       </main>
     }
 }
@@ -525,9 +512,7 @@ pub fn App() -> impl IntoView {
         <Stylesheet id="leptos" href="/pkg/mail-blockhole-web.css"/>
         <Meta name="description" content="Mail catcher for debugging purposes written in Leptos."/>
         <Meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <title>
-          Mail Blackhole
-        </title>
+        <title>Mail Blackhole</title>
         <div id="root">
           <Router>
             <Routes>
