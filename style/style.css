@@ -159,7 +159,8 @@ nav div > a {
   display: flex;
   flex: 0 0 auto;
   min-height: 42px;
-  width: 100%;
+  padding: 6px;
+  word-wrap: anywhere;
 }
 
 nav div > a:not(:last-child) {
