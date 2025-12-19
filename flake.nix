@@ -41,8 +41,29 @@
         type = "app";
         program = "${self.packages.${system}.default}/bin/mail-blackhole";
       };
+      apps.vm = {
+        type = "app";
+        program = "${self.packages.${system}.vm}/bin/run-nixos-vm";
+      };
       packages = {
         default = pkgs.mail-blackhole;
+        vm =
+          (
+            nixpkgs.lib.nixosSystem
+            {
+              system = "x86_64-linux";
+              modules = [
+                {nixpkgs.overlays = [self.overlays.combined];}
+                "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
+                self.nixosModules.default
+                ./nix/vm.nix
+              ];
+            }
+          )
+          .config
+          .system
+          .build
+          .vm;
       };
       devShells = rec {
         default = nightly;
@@ -95,6 +116,7 @@
 
             "LEPTOS_OUTPUT_NAME" = leptos.output-name;
             "CARGO_BUNDLE_DIR" = "${mail-blackhole-web}/share/www";
+            "BASE_URL" = "/mails/";
 
             buildNoDefaultFeatures = true;
             buildFeatures = ["bundle"];
@@ -108,6 +130,8 @@
 
             pname = "mail-blackhole-web";
             version = manifest.package.version;
+
+            "BASE_URL" = "/mails/";
 
             nativeBuildInputs = with pinnedPkgs; [
               wasm-bindgen-cli

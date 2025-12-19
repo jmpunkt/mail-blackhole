@@ -1,16 +1,12 @@
-use std::net::SocketAddr;
-use std::{path::PathBuf, sync::Arc};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 
-use axum::extract::Path;
-use axum::extract::RawQuery;
-use axum::response::IntoResponse;
 use axum::{
     body::Body as AxumBody,
-    extract::State,
+    extract::{Path, RawQuery, State},
     http::{header::HeaderMap, Request},
     response::{
         sse::{Event, KeepAlive},
-        Response as AxumResponse, Sse,
+        IntoResponse, Response as AxumResponse, Sse,
     },
     routing::get,
     Router,
@@ -20,6 +16,7 @@ use leptos::*;
 use leptos_axum::handle_server_fns_with_context;
 use tokio::sync::broadcast::Sender;
 use tokio_stream::{wrappers::BroadcastStream, StreamExt};
+use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::app::App;
 use crate::{Args, QueueItem};
@@ -122,8 +119,17 @@ pub async fn listen(
         }
     };
 
-    let app = app
-        .nest_service(
+    let log_level = args.log_level;
+
+    let leptos_options = LeptosOptions {
+        site_pkg_dir: crate::BASE_URL.chars().skip(1).collect::<String>()
+            + &conf.leptos_options.site_pkg_dir,
+        ..conf.leptos_options
+    };
+
+    let app = Router::new().nest(
+        crate::BASE_URL,
+        app.nest_service(
             "/data",
             tower_http::services::fs::ServeDir::new(&args.mailboxes),
         )
@@ -132,14 +138,25 @@ pub async fn listen(
             get(server_fn_handler).post(server_fn_handler),
         )
         .leptos_routes_with_handler(routes, get(leptos_routes_handler))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().level(log_level))
+                .on_response(DefaultOnResponse::new().level(log_level)),
+        )
         .with_state(Context {
             path: MailboxesPath(args.mailboxes.clone()),
             sender,
-            leptos_options: conf.leptos_options,
-        });
+            leptos_options,
+        }),
+    );
 
     let addr: SocketAddr = args.listen_http.parse()?;
     println!("http server listining on {}", addr);
+
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .compact()
+        .init();
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())

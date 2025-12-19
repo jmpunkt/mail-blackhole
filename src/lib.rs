@@ -1,4 +1,5 @@
 //!
+use tracing::Level;
 
 pub mod api;
 pub mod app;
@@ -54,6 +55,21 @@ fn http_addr() -> String {
 }
 
 #[cfg(feature = "ssr")]
+fn parse_log_level(s: &str) -> Result<Level, String> {
+    match s.to_lowercase().as_str() {
+        "info" => Ok(Level::INFO),
+        "warn" => Ok(Level::WARN),
+        "error" => Ok(Level::ERROR),
+        "trace" => Ok(Level::TRACE),
+        "debug" => Ok(Level::DEBUG),
+        val => Err(format!(
+            "unrecognized log level `{}` use `trace`, `debug`, `info`, `warn` or `error`",
+            val
+        )),
+    }
+}
+
+#[cfg(feature = "ssr")]
 #[derive(Debug, argh::FromArgs)]
 /// Save all mail
 pub struct Args {
@@ -69,11 +85,20 @@ pub struct Args {
     #[argh(option, default = "std::path::PathBuf::from(\"./mailboxes\")")]
     mailboxes: std::path::PathBuf,
 
+    /// defines the logging level (default: info)
+    #[argh(option, from_str_fn(parse_log_level), default = "Level::INFO")]
+    log_level: Level,
+
     #[cfg(not(feature = "bundle"))]
     /// path to directory containing web files (default: $LEPTOS_SITE_PKG_DIR)
     #[argh(option, default = "files_dir()")]
     files: std::path::PathBuf,
 }
+
+const BASE_URL: &'static str = match std::option_env!("BASE_URL") {
+    Some(v) => v,
+    None => "/",
+};
 
 use api::MailboxItem;
 use cfg_if::cfg_if;

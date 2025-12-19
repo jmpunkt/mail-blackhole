@@ -19,8 +19,9 @@ struct MailItemNewEvent(leptos::ReadSignal<Option<QueueItem>>);
 fn sse_events() -> MailItemNewEvent {
     use futures::stream::StreamExt;
 
-    let mut source = gloo_net::eventsource::futures::EventSource::new("/sse")
-        .expect("couldn't connect to SSE stream");
+    let mut source =
+        gloo_net::eventsource::futures::EventSource::new(&format!("{}sse", crate::BASE_URL))
+            .expect("couldn't connect to SSE stream");
     let s = create_signal_from_stream(
         source
             .subscribe("message")
@@ -167,7 +168,7 @@ fn Mailboxes() -> impl IntoView {
                             };
 
                             view! {
-                              <A class=classes href=format!("/{mailbox_id}")>
+                              <A class=classes href=format!("{}{mailbox_id}", crate::BASE_URL)>
                                 <span>{mailbox_id} {unread_string}</span>
                               </A>
                             }
@@ -289,7 +290,7 @@ fn Mailbox() -> impl IntoView {
                                   <A
                                     on:click=handler
                                     class=classes
-                                    href=format!("/{mailbox}/{}", entry.id)
+                                    href=format!("{}{mailbox}/{}", crate::BASE_URL, entry.id)
                                   >
                                     <span>{entry.subject}</span>
                                   </A>
@@ -364,8 +365,9 @@ fn Mail() -> impl IntoView {
         data.get().map(|val| match val {
             None => view! { <div></div> }.into_view(),
             Some((Err(e), _, _)) => view! { <p class="error">{e.to_string()}</p> }.into_view(),
-            Some((Ok(None), _, _)) => view! { <div class="not-found">Mail not found.</div> }
-            .into_view(),
+            Some((Ok(None), _, _)) => {
+                view! { <div class="not-found">Mail not found.</div> }.into_view()
+            }
             Some((Ok(Some(data)), mailbox, mail)) => {
                 let empty = || {
                     view! {
@@ -383,9 +385,10 @@ fn Mail() -> impl IntoView {
                               <object
                                 class="content-html"
                                 type="text/html"
-                                data=format!("/data/{mailbox}/{mail}/body.html")
+                                data=format!("{}data/{mailbox}/{mail}/body.html", crate::BASE_URL)
                               ></object>
-                            } .into_view()
+                            }
+                            .into_view()
                         } else {
                             empty()
                         }
@@ -416,19 +419,22 @@ fn Mail() -> impl IntoView {
                 let subject = data.metadata.subject;
 
                 let attachments = if data.attachments.is_empty() {
-                    view! { <i>none</i> }
-                    .into_view()
+                    view! { <i>none</i> }.into_view()
                 } else {
                     data.attachments
                         .into_iter()
                         .map(|entry| {
                             view! {
-                              <a
-                                href=format!("/data/{mailbox}/{mail}/attachments/{entry}")
+                              <A
+                                href=format!(
+                                    "{}data/{mailbox}/{mail}/attachments/{entry}",
+                                    crate::BASE_URL,
+                                )
+
                                 target="_blank"
                               >
                                 <span>{entry}</span>
-                              </a>
+                              </A>
                             }
                         })
                         .collect_view()
@@ -473,7 +479,10 @@ fn Mail() -> impl IntoView {
                           .map(|(name, entry)| {
                               let classes = if ty == entry { "selected" } else { "" };
                               view! {
-                                <A class=classes href=format!("/{mailbox}/{mail}/{}", entry)>
+                                <A
+                                  class=classes
+                                  href=format!("{}{mailbox}/{mail}/{}", crate::BASE_URL, entry)
+                                >
                                   <span>{name}</span>
                                 </A>
                               }
@@ -508,13 +517,18 @@ pub fn App() -> impl IntoView {
 
     view! {
       <>
-        <Link rel="shortcut icon" type_="image/ico" href="/assets/favicon.ico"/>
-        <Stylesheet id="leptos" href="/pkg/mail-blockhole-web.css"/>
+        <Title text="Mail Blackhole"/>
+        <Link
+          rel="shortcut icon"
+          type_="image/ico"
+          href=format!("{}assets/favicon.ico", crate::BASE_URL)
+        />
+        <Stylesheet id="leptos" href=format!("{}pkg/mail-blockhole-web.css", crate::BASE_URL)/>
         <Meta name="description" content="Mail catcher for debugging purposes written in Leptos."/>
         <Meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <title>Mail Blackhole</title>
         <div id="root">
-          <Router>
+          <Router base="/mails/">
+            // std::option_env!("BASE_URL").unwrap_or("")
             <Routes>
               <Route path="/" view=Mailboxes>
                 <Route path=":mailbox" view=Mailbox>
